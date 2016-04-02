@@ -1,5 +1,5 @@
 
-# mpush-redis
+# ndeploy-bash
 
 Note: the correct repo is: https://github.com/evanx/mpush-redis
 
