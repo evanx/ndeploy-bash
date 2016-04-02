@@ -39,7 +39,7 @@ The script is configured via environment variables:
 Note that this service uses the same Redis-based service lifecycle model as our `mpush-redis` Node service, as described in the document: https://github.com/evanx/mpush-redis/blob/master/service.md
 
 
-###### Self-registration
+##### Self-registration
 
 In this case, we `incr` a unique sequential `serviceId.` We `hsetnx` the details on the `serviceKey` and set its expiry:
 ```shell
@@ -55,7 +55,7 @@ sadd $ns:service:ids $serviceId
 Clearly the `serviceKey` is unique, but nevertheless for sanity we use `hsetnx` rather than `hset.` Our `hsetnx` utility function expects a reply of `1` and otherwise errors, and so the script will exit.
 
 
-#### Blocking pop
+##### Blocking pop
 
 We `brpoplpush` a request `id` and `hget` its request details:
 - mandatory `git` URL
@@ -106,7 +106,7 @@ $ bin/ndeploy loop 60
 where this will call `c1loop 60` i.e. with a parameter of `60` for the `popTimeout` seconds.
 
 
-###### Service expiry
+##### Service expiry
 
 We expire its `serviceKey` in 120 seconds:
 ```shell
@@ -121,7 +121,7 @@ incr $ns:metrics:service:started
 where these metrics are published/alerted by another microservice i.e. out the scope.
 
 
-###### Request handling
+##### Request handling
 
 The popped id is handled as follows:
 ```shell
@@ -202,7 +202,7 @@ Incidently, the default `serviceDir` is formatted from the `ns` as follows:
 serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 ```
 
-###### git clone
+##### git clone
 
 The service must:
 - `git clone` the URL e.g. from Github, into the directory `.ndeploy/demo/$id/master`
@@ -252,7 +252,7 @@ Let's manually check the `package.json` for this deployment:
 }
 ```
 
-###### res
+##### res
 
 We can inspect the response metadata as follows:
 ```
@@ -284,7 +284,7 @@ We can now `lrem :req:pending $id`
 where we scan from the tail of the list.
 
 
-##### Resources
+### Resources
 
 See: https://github.com/evanx/mpush-redis/blob/master/scripts/ndeploy.sh
 
