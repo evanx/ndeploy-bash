@@ -3,9 +3,11 @@
 
 This service should `git clone` and `npm install` repos according to a Redis-based request.
 
+
 ### Status
 
-UNSTABLE
+UNSTABLE - untested initial prototype for demonstration purposes
+
 
 ### Demo
 
