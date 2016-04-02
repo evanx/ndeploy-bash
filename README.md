@@ -3,6 +3,8 @@
 
 This microservice should `git clone` and `npm install` repos according to a Redis-based request.
 
+This is not particularly useful for manual purposes. However it is intended for a distributed system of microservices, where orchestration requires a server for automated deployments of constituent microservices, e.g. for auto-scaling.
+
 As an exercise, it is implemented in `bash` - my other favourite programming language :)
 
 This service performs a blocking pop on an Redis list for incoming request, which are assigned a unique id, by incrementing a Redis serial number.
