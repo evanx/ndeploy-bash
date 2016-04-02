@@ -1,3 +1,4 @@
+#!/bin/bash
 
 set -u -e
 
@@ -189,13 +190,15 @@ nsincr() {
 
 # init service, to expire after 120 seconds
 
-serviceId=`nsincr service | tail -1`
+info "ns $ns"
+serviceId=`incr service | tail -1`
 redis0 exists $ns:service:$serviceId
+hsetnx $ns:service:$serviceId `hostname -s`
 hsetnx $ns:service:$serviceId pid $$
 hsetnx $ns:service:$serviceId started `$rediscli time | head -1`
 expire $ns:service:$serviceId 120
 hgetall $ns:service:$serviceId
-serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
+serviceDir=$HOME/.ndeploy/`echo $ns | sed 's/ndeploy://' | tr ':' '-'`
 info "service: $serviceId $ns $serviceDir"
 mkdir -p $serviceDir && cd $serviceDir || exit 1
 info 'pwd' `pwd`
