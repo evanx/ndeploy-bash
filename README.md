@@ -5,11 +5,13 @@ This microservice should `git clone` and `npm install` repos according to a Redi
 
 As an exercise, it is implemented in `bash` - my other favourite programming language :)
 
-Although writing robust bash scripts is challenging, this can be mitigated by `set -u -e` i.e. exiting on any error, i.e. any command exiting with nonzero exit code, including `grep` et al.
+This service performs a blocking pop on an Redis list for incoming request, which are assigned a unique id, by incrementing a Redis serial number.
 
-We demonstrate that ensuring that multiple instances are safely co-ordinated and isolated, is relatively simple when using a Redis-based service lifecycle model.
+Writing robust bash scripts is challenging, and this must be mitigated by `set -u -e` i.e. exiting on any error, i.e. any command exiting with nonzero exit code, including `grep` et al.
 
 For example, we start a new service instance every minute via `crond,` and expire our service keys every 120 seconds, to ensure that at most two instances are provisioned.
+
+We demonstrate that that safely co-ordinating and isolating such scripts is relatively simple when using a Redis-based service lifecycle model.
 
 
 ### Status
