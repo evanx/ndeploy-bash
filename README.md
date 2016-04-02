@@ -1,7 +1,15 @@
 
 # ndeploy-bash
 
-This service should `git clone` and `npm install` repos according to a Redis-based request.
+This microservice should `git clone` and `npm install` repos according to a Redis-based request.
+
+As an exercise, it is implemented in `bash` - my other favourite programming language :)
+
+Although writing robust bash scripts is challenging, this can be mitigated by `set -u -e` i.e. exiting on any error, i.e. any command exiting with nonzero exit code, including `grep` et al.
+
+We demonstrate that ensuring that multiple instances are safely co-ordinated and isolated, is relatively simple when using a Redis-based service lifecycle model.
+
+For example, we start a new service instance every minute via `crond,` and expire our service keys every 120 seconds, to ensure that at most two instances are provisioned.
 
 
 ### Status
@@ -54,6 +62,16 @@ sadd $ns:service:ids $serviceId
 ```
 Clearly the `serviceKey` is unique, but nevertheless for sanity we use `hsetnx` rather than `hset.` Our `hsetnx` utility function expects a reply of `1` and otherwise errors, and so the script will exit.
 
+For example:
+```
+hgetall demo:ndeploy:service:8
+1) "host"
+2) "eowyn"
+3) "pid"
+4) "14527"
+5) "started"
+6) "1459637169"
+```
 
 ##### Blocking pop
 
