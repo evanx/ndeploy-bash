@@ -2,6 +2,10 @@
 
 set -u -e
 
+# vars
+
+serviceKey=''
+
 # context
 
 ns='demo:ndeploy'
@@ -17,19 +21,18 @@ then
   rediscli='redis-cli -n 13'
 fi
 
-
 # logging
 
 debug() {
-  >&2 echo "DEBUG $ns $serviceId - $*"
+  >&2 echo "DEBUG $serviceKey - $*"
 }
 
 info() {
-  >&2 echo "INFO $ns $serviceId - $*"
+  >&2 echo "INFO $serviceKey - $*"
 }
 
 warn() {
-  >&2 echo "WARN $ns $serviceId - $*"
+  >&2 echo "WARN $serviceKey - $*"
 }
 
 
@@ -76,7 +79,7 @@ redise() {
     return 1
   fi
   reply=`$rediscli $rcmd`
-  if echo "$reply" | grep -v "^${expect}$"
+  if ! echo "$reply" | grep -q "^${expect}$"
   then
     >&2 echo "WARN $rcmd - reply $reply - not $expect"
     return 2
@@ -96,8 +99,8 @@ redis1() {
 }
 
 expire() {
-  [ $# -eq 2 ]
   info "expire $*"
+  [ $# -eq 2 ]
   redis1 expire $*
 }
 
@@ -136,7 +139,7 @@ lpush() {
   [ $# -eq 2 ]
   reply=`$rediscli lpush $*`
   debug "lpush $* - $reply"
-  echo "$reply" | -q grep '^[1-9][0-9]*$'
+  echo "$reply" | grep -q '^[1-9][0-9]*$'
 }
 
 brpoplpush() {
@@ -180,7 +183,7 @@ hgetd() {
   fi
 }
 
-nsincr() {
+rincr() {
   [ $# -eq 1 ]
   name=$1
   id=`incr $ns:$name:id`
@@ -190,18 +193,17 @@ nsincr() {
 
 # init service, to expire after 120 seconds
 
-info "ns $ns"
-serviceId=`incr service | tail -1`
-redis0 exists $ns:service:$serviceId
-hsetnx $ns:service:$serviceId `hostname -s`
-hsetnx $ns:service:$serviceId pid $$
-hsetnx $ns:service:$serviceId started `$rediscli time | head -1`
-expire $ns:service:$serviceId 120
-hgetall $ns:service:$serviceId
-serviceDir=$HOME/.ndeploy/`echo $ns | sed 's/ndeploy://' | tr ':' '-'`
-info "service: $serviceId $ns $serviceDir"
+serviceId=`rincr service | tail -1`
+serviceKey="$ns:service:$serviceId"
+redis0 exists $serviceKey
+hsetnx $serviceKey host `hostname -s`
+hsetnx $serviceKey pid $$
+hsetnx $serviceKey started `$rediscli time | head -1`
+expire $serviceKey 120
+hgetall $serviceKey
+serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 mkdir -p $serviceDir && cd $serviceDir || exit 1
-info 'pwd' `pwd`
+info pwd `pwd` $serviceDir
 
 v1popError() {
   id=$1
@@ -218,28 +220,9 @@ c0exit() {
   then
     v1popError $pendingId
   fi
-
 }
 
 trap c0exit exit
-
-c1pop() {
-  popTimeout=$1
-  expire $ns:service:$serviceId $popTimeout
-  rcmd="brpoplpush $ns:req $ns:pending $popTimeout"
-  id=`$rediscli $rcmd | grep '^[1-9][0-9]*$'`
-  debug "popped $id"
-  [ -n $id ]
-  pendingId=$1
-  expire $ns:req:$id 10
-  hgetall $ns:req:$id
-  c1popped $id
-  redis1 sadd $ns:res:ids $id
-  redis1 persist $ns:res:$id
-  hgetall $ns:res:$id
-  lpush $ns:res $id
-  pendingId=''
-}
 
 c1popped() {
   id=$1
@@ -251,7 +234,7 @@ c1popped() {
   deployDir="$serviceDir/$id"
   [ ! -d $deployDir ]
   hsetnx $ns:res:$id deployDir $deployDir
-  expire $ns:res:$id 600
+  expire $ns:res:$id 900 # ttl sufficient for git clone and npm install
   echo "INFO deployDir $deployDir"
   mkdir -p $deployDir && cd $deployDir
   git clone $git -b $branch $branch
@@ -272,8 +255,26 @@ c1popped() {
   echo "INFO actualCommit $actualCommit"
   hsetnx $ns:res:$id actualCommit $actualCommit
   deployDir=`$rediscli hget $ns:res:$id deployDir`
-  2>&1 echo "OK $id $deployDir"
+  debug "OK popped $id $deployDir"
   echo $deployDir | grep '/'
+}
+
+c1pop() {
+  popTimeout=$1
+  expire $serviceKey $popTimeout
+  rcmd="brpoplpush $ns:req $ns:pending $popTimeout"
+  id=`$rediscli $rcmd | grep '^[1-9][0-9]*$'`
+  debug "popped $id"
+  [ -n $id ]
+  pendingId=$id
+  expire $ns:req:$id 10
+  hgetall $ns:req:$id
+  c1popped $id
+  redis1 sadd $ns:res:ids $id
+  redis1 persist $ns:res:$id
+  hgetall $ns:res:$id
+  lpush $ns:res $id
+  pendingId=''
 }
 
 
@@ -284,21 +285,20 @@ c1req() {
   id=`incr $ns:req:id`
   hsetnx $ns:req:$id git $gitUrl
   lpush $ns:req $id
-  echo "OK $id $gitUrl"
+  debug "OK $id $gitUrl"
   echo $id
 }
 
 c2brpop() {
   reqId=$1
   popTimeout=$2
-  resId=`brpop $ns:res $popTimeout`
-  if [ "$reqId" != $id ]
+  resId=`brpop $ns:res $popTimeout | tail -1`
+  if [ "$reqId" != "$resId" ]
   then
-    >&2 echo "mismatched id: $resId"
-    redis-cli lpush $ns:res $resId
+    warn "mismatched ids: $reqId, $resId: lpush $ns:res $resId"
+    lpush $ns:res $resId
     return 1
   fi
-  echo "$reqId" | grep '^[1-9][0-9]*$'
   $rediscli hget $ns:res:$id deployDir | grep '/'
 }
 
@@ -314,9 +314,9 @@ c0tdeploy() {
   c2deploy https://github.com/evanx/hello-component 60
 }
 
-c0clear13() {
-  redis-cli -n 13 keys "$ns:*" | xargs -n1 redis-cli -n 13 del
+c0tclear13() {
   rm -rf $HOME/.ndeploy/demo-ndeploy
+  redis-cli -n 13 keys "$ns:*" | xargs -n1 redis-cli -n 13 del
 }
 
 c0test() {

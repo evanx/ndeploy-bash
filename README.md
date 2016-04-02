@@ -7,8 +7,20 @@ This service should `git clone` and `npm install` repos according to a Redis-bas
 
 UNSTABLE
 
-### Service implementation
+### Demo
 
+```shell
+~/ndeploy-bash$ sh scripts/demo.sh
+```
+Beware the defaults:
+```shell
+ns='demo:ndeploy'
+rediscli='redis-cli -n 13'
+```
+
+### Service implementation
+ns='demo:ndeploy'
+rediscli='redis-cli -n 13'
 Let's walk-through the `ndeploy` script: https://github.com/evanx/ndeploy-bash/blob/master/bin/ndeploy
 
 Firstly, to make the script robust, we must exit on error:
@@ -180,13 +192,13 @@ $ ndeploy deploy https://github.com/evanx/hello-component | tail -1
 ```
 This will echo the directory with the successful deployment:
 ```
-/home/evans/.ndeploy/demo/8
+/home/evans/.ndeploy/demo-ndeploy/8
 ```
 where `demo` relates to the service namespace, and `8` is the service id.
 
 Incidently, the default `serviceDir` is formatted from the `ns` as follows:
 ```shell
-serviceDir=$HOME/.ndeploy/`echo $ns | sed 's/ndeploy://' | tr ':' '-'`
+serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 ```
 
 ###### git clone
