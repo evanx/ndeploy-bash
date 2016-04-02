@@ -3,11 +3,13 @@
 
 This microservice should `git clone` and `npm install` repos according to a Redis-based request.
 
-This is not particularly useful for manual purposes. However it is intended for a distributed system of microservices, where orchestration requires a server for automated deployments of constituent microservices, e.g. for auto-scaling.
+This service performs a blocking pop on an Redis list for incoming request. Request/response pairs are assigned a unique id, by incrementing a Redis serial number. Information is exchanged via Redis hashes, and notifications via Redis lists.
 
-As an exercise, it is implemented in `bash` - my other favourite programming language :)
+This is not particularly useful for casual purposes. However it is intended for the orchestration of a distributed system of microservices.
 
-This service performs a blocking pop on an Redis list for incoming request, which are assigned a unique id, by incrementing a Redis serial number.
+In fact a further service named `rcontrol` is planned, which will require `ndeploy.` For an overview of these related projects, with the goal of demonstrating a distributed web server, using Redis-based microservices, see: https://github.com/evanx/mpush-redis/blob/master/related.md
+
+As an exercise, it is implemented in `bash` - my other favourite programming language, through force of habit managing Linux production environments.
 
 Writing robust bash scripts is challenging, and this must be mitigated by `set -u -e` i.e. exiting on any error, i.e. any command exiting with nonzero exit code, including `grep` et al.
 
