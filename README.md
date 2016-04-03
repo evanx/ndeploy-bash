@@ -57,7 +57,7 @@ The script is configured via environment variables:
 - `rediscli` - the Redis connection command e.g. `redis-cli -n 13 -p 6379`
 
 
-##### Self-registration
+### Self-registration
 
 In this case, we `incr` a unique sequential `serviceId.` We `hsetnx` the details on the `serviceKey:`
 ```shell
@@ -85,7 +85,7 @@ hgetall demo:ndeploy:service:8
 ```
 
 
-##### Blocking pop
+### Blocking pop
 
 We `brpoplpush` a request `id` and `hget` its request details, namely:
 - mandatory `git` URL
@@ -125,7 +125,7 @@ c1loop() { # popTimeout
 }   
 ```
 
-#### Command functions
+### Command functions
 
 We use a convention for CLI-capable command functions where e.g. a `c1` prefix means there is `1` argument for this command:
 ```shell
@@ -150,7 +150,7 @@ evans@eowyn:~/ndeploy-bash$ bin/ndeploy
 1 pop # popTimeout
 ```
 
-##### Service expiry
+### Service expiry
 
 We expire its `serviceKey` in 120 seconds:
 ```shell
@@ -160,7 +160,7 @@ redis1 expire $serviceKey 120
 At this expire interval, if starting a new instance every minute via the cron, then we should observe at most two instances running at a time. If each instance errors immediately, then no instances will be running for the minute.
 
 
-##### Metrics
+### Metrics
 
 We push metrics into Redis:
 ```shell
@@ -169,7 +169,7 @@ hincrby $ns:service:metric:started count 1
 where these metrics are published/alerted by another microservice i.e. out the scope.
 
 
-#### Request handling
+### Request handling
 
 The popped id is handled as follows:
 ```shell
@@ -202,7 +202,7 @@ This is invoked by the "demo" script to initiate a test request:
 See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
 
 
-#### Request creation
+### Request creation
 
 We try the following client `deploy` "command" with a `gitUrl` parameter.
 ```shell
@@ -231,7 +231,7 @@ where we:
 - `lpush` the request id to submit the request to the service
 
 
-#### Response processing
+### Response processing
 
 The service will asynchronously respond to the client's request via a Redis list e.g. `demo:ndeploy:res.`
 
@@ -250,12 +250,12 @@ c1brpop() {
   hget $ns:req:$resId deployDir | grep '/'
 }
 ```
-where we match the request id, and then output the `deployDir` as successfully prepared by the backend service.
+where we match the request id, and then output the `deployDir,` to complete the test successfully.
 
 If the response id does not match our request, then we `lpush` the id back into the queue, and error/exit.
 
 
-##### Test server
+### Test server
 
 We run a test service instance in the background that will pop a single request and then exit:
 ```
@@ -280,7 +280,7 @@ serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 where any semicolon in the `ns` is converted to a dash in the `deployDir.`
 
 
-##### git clone
+### git clone
 
 The service must:
 - `git clone` the URL e.g. from Github into the directory: `.ndeploy/demo/$id/master`
@@ -299,7 +299,7 @@ The service must:
 where we set the `cloned` timestamp to the modtime of the `deployDir.`
 
 
-##### npm install
+### npm install
 
 ```shell  
   if [ -f package.json ]
@@ -331,7 +331,8 @@ Let's manually check the `package.json` for this deployment:
 }
 ```
 
-##### res
+
+### Response hashes
 
 We can inspect the response metadata as follows:
 ```
