@@ -108,7 +108,9 @@ c0pop() { # popTimeout
 ```
 where we `brpoplpush` the next request `id` and call `c1popped` with that.
 
-Note that our `redis1` utility function expects a reply of `1` and otherwise errors. If the `service` key has expired or been deleted:
+Note that our `redis1` utility function expects a reply of `1` and otherwise errors.
+
+So if the `service` key has expired or been deleted:
 - the `exists` command will reply with `0`
 - consequently the `redis1` function errors, since this checks for a `1` reply
 - the script will exit, because we `set -e`
