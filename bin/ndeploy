@@ -21,6 +21,9 @@ warn() {
   >&2 echo "WARN $serviceKey - $*"
 }
 
+error() {
+  >&2 echo "ERROR $serviceKey - $*"
+}
 
 # lifecycle
 
@@ -191,7 +194,7 @@ info pwd `pwd` $serviceDir
 
 v1popError() {
   id=$1
-  echo "ERROR pop: $*"
+  error "pop: $*"
   $rediscli lpush $ns:req $id
   $rediscli lrem $ns:req:pending -1 $id
   exit 9
