@@ -143,6 +143,9 @@ redis1 expire $serviceKey 120
 
 At this expire interval, if starting a new instance every minute via the cron, then we should observe at most two instances running at a time. If each instance errors immediately, then no instances will be running for the minute.
 
+
+##### Metrics
+
 We push metrics into Redis:
 ```shell
 hincrby $ns:service:metric:started count 1
@@ -166,9 +169,9 @@ c1popped() {
   hsetnx $ns:res:$id deployDir $deployDir
   c5deploy $git "$branch" "$commit" "$tag" $deployDir
 ```
-where `c5deploy` will `git clone` and `npm install` the `deployDir.`
+where `c5deploy` will `git clone` and `npm install` the package into `deployDir.`
 
-We use can use the following `deploy` "command" with a `gitUrl` parameter.
+We use the following `deploy` "command" with a `gitUrl` parameter.
 ```shell
 c1deploy() {
   gitUrl=$1
