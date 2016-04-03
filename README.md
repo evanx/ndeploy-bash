@@ -112,7 +112,7 @@ Note that our `redis1` utility function expects a reply of `1` and otherwise err
 
 So if the `service` key has expired or been deleted:
 - the `exists` command will reply with `0`
-- consequently the `redis1` function errors, since this asserts that the Redis reply is `1`
+- consequently the `redis1` function errors, since it checks that the Redis reply is `1.`
 - the script will exit, because we `set -e`
 
 Otherwise we loop forever as follows:
