@@ -10,16 +10,24 @@ To celebrate a big week for `bash` with the Windows 10 announcement, we implemen
 
 This service is intended for the orchestration of a distributed system of Redis-driven microservices, e.g. a distributed webserver as per https://github.com/evanx/mpush-redis/blob/master/related.md
 
-The maximum TTL of each instance is controlled via its service key e.g. which expires in 120 seconds.
-
 This service uses a similar Redis-based service lifecycle model as our `mpush-redis` Node service, described in: https://github.com/evanx/mpush-redis/blob/master/service.md.
+
+The maximum TTL of each instance is controlled via its service key e.g. which expires in 120 seconds.
 
 
 ### bash
 
-As an exercise, this service is implemented in `bash.` We improve its robustness by `set -e` i.e. by automatically exiting when any command "errors" i.e. returns nonzero. We use `grep` to check Redis replies and exit if it is not as expected.
+As an exercise, this service is implemented in `bash.` We improve its robustness by `set -e` i.e. by automatically exiting when any command "errors" i.e. returns nonzero.
 
-Any number of concurrent redundant instances is supported. Typically we might start a new service instance every minute via `crond.` Since its maximum TTL is 2 minutes, this ensures that at most two instances are running concurrently.
+For example, we use `grep` to check Redis replies:
+```shell
+redis1() {
+  $rediscli | grep -q '^1$'
+}
+```
+where the script will automatically exit if the reply is not matched, because of the exit-on-error setting.
+
+As such redundant instances must be supported. Typically we might start a new service instance every minute via the cron. Since its maximum TTL is 2 minutes, this ensures that at most two instances are running concurrently.
 
 
 ### Status
@@ -39,14 +47,10 @@ rediscli='redis-cli -n 13'
 ```
 where `ns` is the "namespace" used to prefix keys.
 
+
 ### Implementation
 
 Let's walk through the `ndeploy` script: https://github.com/evanx/ndeploy-bash/blob/master/bin/ndeploy
-
-Firstly, to make the script robust, we must exit on error:
-```shell
-set -u -e
-```
 
 The script is configured via environment variables:
 - `ns` - the Redis "namespace" e.g. `demo:ndeploy`
@@ -108,12 +112,7 @@ c0pop() { # popTimeout
 ```
 where we `brpoplpush` the next request `id` and call `c1popped` with that.
 
-Note that our `redis1` utility function expects a reply of `1` and otherwise errors.
-
-So if the `service` key has expired or been deleted:
-- the `exists` command will reply with `0`
-- consequently the `redis1` function errors, since it checks that the Redis reply is `1.`
-- the script will exit, because we `set -e`
+Note that we exit if the the service key does not exist, courtesy of our `redis1` function.
 
 Otherwise we loop forever as follows:
 ```shell
@@ -126,7 +125,9 @@ c1loop() { # popTimeout
 }   
 ```
 
-Note we use a convention for CLI-capable command functions where e.g. a `c1` prefix means there is `1` argument for this command:
+#### Command functions
+
+We use a convention for CLI-capable command functions where e.g. a `c1` prefix means there is `1` argument for this command:
 ```shell
 if [ $# -ge 1 ]
 then
@@ -186,18 +187,35 @@ c1popped() {
 ```
 where `c5deploy` will `git clone` and `npm install` the package into `deployDir.`
 
-We use the following `deploy` "command" with a `gitUrl` parameter.
+
+### Demo client
+
+Let's walk through the client-side request script: https://github.com/evanx/ndeploy-bash/blob/master/scripts/test-client.sh
+
+This is invoked by the "demo" script to initiate a test request:
+
 ```shell
-c1deploy() {
+  sh bin/ndeploy pop 10 &
+  deployDir=`sh scripts/test-client.sh deploy | tail -1`
+```
+
+See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
+
+
+#### Request creation
+
+We try the following client `deploy` "command" with a `gitUrl` parameter.
+```shell
+c1deploy() { # gitUrl
   gitUrl=$1
   id=`c1req | tail -1`
   c1brpop $id
 }
 ```
 
-Note that since `{branch, commmit, tag}` have not been specified, we default `master` and `HEAD.`
+Note that since `{branch, commmit, tag}` have not been specified, we expect the current `HEAD` of `master.`
 
-The script will `incr` and `lpush` the request id as follows:
+We create a new client request as follows:
 ```shell
 c1req() {
   gitUrl="$1"
@@ -207,9 +225,17 @@ c1req() {
   echo $id
 }
 ```
-where we set the Git URL via request hashes.
+where we:
+- `incr` a sequence number to get a unique request id
+- `hsetnx` the git URL on request hashes
+- `lpush` the request id to submit the request to the service
 
-The following function will match the response id:
+
+#### Response processing
+
+The service will asynchronously respond to the client's request via a Redis list e.g. `demo:ndeploy:res.`
+
+We pop responses to get the prepared `deployDir` as follows:
 ```shell
 c1brpop() {
   reqId="$1"
@@ -218,37 +244,40 @@ c1brpop() {
   then
     >&2 echo "mismatched id: $resId"
     lpush $ns:res $resId
+    sleep 1
     return 1
   fi
-  hget $ns:req:$id deployDir | grep '/'
+  hget $ns:req:$resId deployDir | grep '/'
 }
 ```
-where this will echo the `deployDir` and otherwise `lpush` the id back into the queue, and error out.
+where we match the request id, and then output the `deployDir` as successfully prepared by the backend service.
+
+If the response id does not match our request, then we `lpush` the id back into the queue, and error/exit.
 
 
 ##### Test server
 
 We run a test service instance in the background that will pop a single request and then exit:
 ```
-$ ndeploy pop 60 &
+$ bin/ndeploy pop 60 &
 ```
 where the blocking pop timeout is specified as `60` seconds.
 
-This is commanded as follows:
+We command test client as follows:
 ```
-$ ndeploy deploy https://github.com/evanx/hello-component | tail -1
+$ scripts/test-client.sh deploy https://github.com/evanx/hello-component | tail -1
 ```
-This will echo the directory with the successful deployment:
+This will error, or echo the directory with the successful deployment:
 ```
 /home/evans/.ndeploy/demo-ndeploy/8
 ```
-where `demo` relates to the service namespace, and `8` is the service id.
+where `demo-ndeploy` relates to the service namespace, and `8` is the service id.
 
 Incidently, the default `serviceDir` is formatted from the `ns` as follows:
 ```shell
 serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 ```
-where any semi-colon in the `ns` is converted to a dash in the `deployDir.`
+where any semicolon in the `ns` is converted to a dash in the `deployDir.`
 
 
 ##### git clone
@@ -321,17 +350,17 @@ which includes the `actualCommit` SHA according to `git log` e.g. for `HEAD` at 
   actualCommit=`git log | head -1 | cut -d' ' -f2`
   hsetnx $ns:res:$id actualCommit $actualCommit
 ```
-where we `hsetnx` response hashes e.g. `demo:ndeploy:res:8` (matching the `req:8` request).
+where the service sets e.g. `:res:8` (matching the `:req:8` request).
 
-We push the request `id` to the `:res` list.
+It notifies the client that the response is ready by pushing the id to the `:res` list.
 ```shell
   lpush $ns:res $id
 ```
- Fiinally we `lrem` the request id from the pending list:
+ Incidently, the service will `lrem` the id from the pending list:
 ```shell
   lrem $ns:req:pending -1 $id
 ```
-where we scan from the tail of the list.
+where we scan from the tail of the list via the `-1` parameter.
 
 
 ### Resources

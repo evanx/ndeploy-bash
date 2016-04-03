@@ -218,7 +218,7 @@ c2brpop() {
     lpush $ns:res $resId
     return 1
   fi
-  $rediscli hget $ns:res:$id deployDir | grep '/'
+  $rediscli hget $ns:res:$resId deployDir | grep '/'
 }
 
 c2deploy() {
@@ -236,7 +236,7 @@ c4deploy() {
   c2brpop $id $resTimeout
 }
 
-c0tdeploy() {
+c0deploy() {
   set -e
   c4deploy 60 https://github.com/evanx/hello-component master HEAD
 }

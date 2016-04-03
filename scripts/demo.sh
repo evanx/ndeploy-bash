@@ -11,5 +11,5 @@ rediscli='redis-cli -n 13'
 
   ns=$ns rediscli=$rediscli sh scripts/test-client.sh tclear13
   ns=$ns rediscli=$rediscli sh bin/ndeploy pop 10 &
-  deployDir=`ns=$ns rediscli=$rediscli sh scripts/test-client.sh tdeploy | tail -1`
+  deployDir=`ns=$ns rediscli=$rediscli sh scripts/test-client.sh deploy | tail -1`
   echo deployDir $deployDir
