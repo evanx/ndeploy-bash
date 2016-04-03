@@ -237,8 +237,9 @@ where any semi-colon in the `ns` is converted to a dash in the `deployDir.`
 ##### git clone
 
 The service must:
-- `git clone` the URL e.g. from Github, into the directory: `.ndeploy/demo/$id/master`
+- `git clone` the URL e.g. from Github into the directory: `.ndeploy/demo/$id/master`
 - `git checkout $commit` if a commit hash is specified in the `:req:$id` hashes
+- `git checkout tags/$tag` if a tag is specified rather than a commit hash
 
 ```shell
   git clone $git -b $branch $branch
