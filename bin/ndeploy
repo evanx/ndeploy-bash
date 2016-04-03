@@ -7,6 +7,7 @@ set -u -e
 ns=${ns:=demo\:ndeploy}
 rediscli=${rediscli:=redis-cli -n 13}
 
+
 # logging
 
 debug() {
@@ -176,11 +177,15 @@ incrid() {
   echo $id
 }
 
+count() {
+   hincrbyq $ns:service:metric:$1 count 1
+}
+
 # init service, to expire after 120 seconds
 
 serviceId=`incrid service | tail -1`
 serviceKey="$ns:service:$serviceId"
-hincrbyq $ns:service:metric:started count 1
+count started $serviceId $$
 serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 info $serviceDir
 redis0 exists $serviceKey
@@ -192,9 +197,13 @@ hgetall $serviceKey
 mkdir -p $serviceDir && cd $serviceDir || exit 1
 info pwd `pwd` $serviceDir
 
+
+# service functions
+
 v1popError() {
   id=$1
   error "pop: $*"
+  count popError $id
   $rediscli lpush $ns:req $id
   $rediscli lrem $ns:req:pending -1 $id
   exit 9
@@ -213,6 +222,7 @@ trap c0exit exit
 
 c1popped() {
   id=$1
+  count popped $id
   git=`$rediscli hget $ns:req:$id git | grep '^http\|^git@'`
   branch=`hgetd master $ns:req:$id branch`
   commit=`$rediscli hget $ns:req:$id commit`
@@ -242,6 +252,7 @@ c1popped() {
     cat package.json
     npm --silent install
     hsetnx $ns:res:$id npmInstalled `stat -c %Z node_modules`
+    count npmInstalled $id
   fi
   actualCommit=`git log | head -1 | cut -d' ' -f2`
   echo "INFO actualCommit $actualCommit"
@@ -342,8 +353,8 @@ c0test() {
 
 # command
 
-info "rediscli $rediscli"
-info "args $@"
+info "rediscli: $rediscli"
+info "args: $@"
 
 command=test
 if [ $# -ge 1 ]
