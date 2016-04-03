@@ -291,7 +291,7 @@ Let's manually check the `package.json` for this deployment:
 
 We can inspect the response metadata as follows:
 ```
-> hgetall demo:ndeploy:res:8
+hgetall demo:ndeploy:res:8
 1) "deployDir"
 2) "/home/evans/.ndeploy/demo-ndeploy/1"
 3) "cloned"
