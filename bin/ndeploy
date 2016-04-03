@@ -155,13 +155,12 @@ llen() {
   echo $llen | grep '^[1-9][0-9]*$'
 }
 
-hincrby() {
-  [ $# -eq 2 ]
+hincrbyq() {
+  [ $# -eq 3 ]
   reply=`$rediscli hincrby $*`
   debug "hincrby $* - $reply"
-  echo $reply | grep '^[1-9][0-9]*$'
+  echo $reply | grep -q '^[1-9][0-9]*$'
 }
-
 
 hgetd() {
   [ $# -eq 3 ]
@@ -187,9 +186,9 @@ incrid() {
 
 # init service, to expire after 120 seconds
 
-hincrby $ns:service:metric:started count 1
 serviceId=`incrid service | tail -1`
 serviceKey="$ns:service:$serviceId"
+hincrbyq $ns:service:metric:started count 1
 serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 info $serviceDir
 redis0 exists $serviceKey
