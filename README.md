@@ -236,7 +236,7 @@ serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 where any semi-colon in the `ns` is converted to a dash in the `deployDir.`
 
 
-##### git clone
+###### git clone
 
 The service must:
 - `git clone` the URL e.g. from Github into the directory: `.ndeploy/demo/$id/master`
@@ -287,7 +287,7 @@ Let's manually check the `package.json` for this deployment:
 }
 ```
 
-##### res
+###### res
 
 We can inspect the response metadata as follows:
 ```
