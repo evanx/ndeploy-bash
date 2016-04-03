@@ -1,24 +1,27 @@
 
 ## ndeploy-bash
 
-This ephemeral microservice should `git clone` and `npm install` repos according to a Redis-based request:
-- it performs a blocking pop on an Redis list for an incoming request
+To celebrate a big week for `bash` with the Windows 10 announcement, we implement a ephemeral stateless microservice that will `git clone` and `npm install` repos according to a Redis-based request.
+
+- performs a blocking pop on an Redis list for an incoming request
 - request/response pairs are assigned a unique id by incrementing a Redis serial number
 - information is exchanged via Redis request/response hashes
 - an async response notification is published via a Redis list
-- the service must shutdown when its hashes key in Redis has expired (or was deleted)
-- we expire the service key in 120 seconds
 
-Since the routine timeout of the blocking pop command causes the script to exit, each service instance is clearly ephemeral. However it is stateless i.e. we can run as many concurrent instances as we wish.
+This service is intended for the orchestration of a distributed system of Redis-driven microservices, e.g. a distributed webserver as per https://github.com/evanx/mpush-redis/blob/master/related.md
 
-This service is not particularly useful for manual purposes. It is intended for the orchestration of a distributed system of microservices. Other orchestration services are planned, that require `ndeploy.` For an overview of these related services, see: https://github.com/evanx/mpush-redis/blob/master/related.md
+The maximum TTL of each instance is controlled via its service key e.g. which expires in 120 seconds.
 
+This service uses a similar Redis-based service lifecycle model as our `mpush-redis` Node service, described in: https://github.com/evanx/mpush-redis/blob/master/service.md.
+
+- its state is stored in a Redis "service key"
+- the service exits when that expires, or is deleted
 
 ### bash
 
-As an exercise, this service is implemented in `bash.` We improve its robustness by `set -e` i.e. by automatically exiting when any command "errors" i.e. returns nonzero. We can use `grep` to check Redis replies and exit if the reply is not as expected.
+As an exercise, this service is implemented in `bash.` We improve its robustness by `set -e` i.e. by automatically exiting when any command "errors" i.e. returns nonzero. We use `grep` to check Redis replies and exit if it is not as expected.
 
-Any number of redundant instances is supported. We might start a new service instance every minute via `crond.` Since its maximum TTL is 2 minutes, this ensures that at most two instances are running concurrently.
+Any number of concurrent redundant instances is supported. Typically we might start a new service instance every minute via `crond.` Since its maximum TTL is 2 minutes, this ensures that at most two instances are running concurrently.
 
 
 ### Status
@@ -38,7 +41,7 @@ rediscli='redis-cli -n 13'
 ```
 where `ns` is the "namespace" used to prefix keys.
 
-### Service implementation
+### Implementation
 
 Let's walk through the `ndeploy` script: https://github.com/evanx/ndeploy-bash/blob/master/bin/ndeploy
 
@@ -52,11 +55,6 @@ The script is configured via environment variables:
 - `rediscli` - the Redis connection command e.g. `redis-cli -n 13 -p 6379`
 
 
-#### Service
-
-Note that this service uses the same Redis-based service lifecycle model as our `mpush-redis` Node service. This is described in the document: https://github.com/evanx/mpush-redis/blob/master/service.md.
-
-
 ##### Self-registration
 
 In this case, we `incr` a unique sequential `serviceId.` We `hsetnx` the details on the `serviceKey:`
@@ -64,6 +62,7 @@ In this case, we `incr` a unique sequential `serviceId.` We `hsetnx` the details
 serviceId=`incr $ns:service:id`
 serviceKey="$ns:service:$serviceId"
 startedTimestamp=`$rediscli time | head -1`
+count started $startedTimestamp
 hsetnx $serviceKey started $startedTimestamp
 hsetnx $serviceKey host `hostname -s`
 hsetnx $serviceKey pid $$
