@@ -125,8 +125,15 @@ c1loop() {
 }   
 ```
 
-Note we use a convention for CLI-capable command functions where e.g. a `c1` prefix means there is `1` argument for this command.
-
+Note we use a convention for CLI-capable command functions where e.g. a `c1` prefix means there is `1` argument for this command:
+```shell
+if [ $# -ge 1 ]
+then
+  command=$1
+  shift
+  c$#$command $@
+fi
+```
 We can call command functions from the command-line as follows:
 ```shell
 $ bin/ndeploy loop 60

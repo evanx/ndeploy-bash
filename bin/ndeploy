@@ -2,6 +2,15 @@
 
 set -u -e
 
+# help
+
+if [ $# -eq 0 ]
+then
+   cat $0 | grep ^c[0-9] | grep -v c0exit | sed 's/^c\([0-9]\)\(\w*\)() {\s*[\W]*\(.*\)$/\1 \2 \3/' 
+   exit 0
+fi
+
+
 # env context
 
 ns=${ns:=demo\:ndeploy}
@@ -220,7 +229,7 @@ c0exit() {
 
 trap c0exit exit
 
-c1popped() {
+c1popped() { # id
   id=$1
   count popped $id
   git=`$rediscli hget $ns:req:$id git | grep '^http\|^git@'`
@@ -262,7 +271,7 @@ c1popped() {
   echo $deployDir | grep '/'
 }
 
-c1pop() {
+c1pop() { # popTimeout
   popTimeout=$1
   expire $serviceKey $popTimeout
   redisCommand="brpoplpush $ns:req $ns:pending $popTimeout"
@@ -285,7 +294,6 @@ c1pop() {
 info "rediscli: $rediscli"
 info "args: $@"
 
-command=test
 if [ $# -ge 1 ]
 then
   command=$1
