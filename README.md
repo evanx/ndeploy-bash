@@ -14,8 +14,6 @@ The maximum TTL of each instance is controlled via its service key e.g. which ex
 
 This service uses a similar Redis-based service lifecycle model as our `mpush-redis` Node service, described in: https://github.com/evanx/mpush-redis/blob/master/service.md.
 
-- its state is stored in a Redis "service key"
-- the service exits when that expires, or is deleted
 
 ### bash
 

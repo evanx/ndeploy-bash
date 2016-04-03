@@ -2,11 +2,12 @@
 
 set -u -e
 
-# help
+
+# help (listing commands)
 
 if [ $# -eq 0 ]
 then
-   cat $0 | grep ^c[0-9] | grep -v c0exit | sed 's/^c\([0-9]\)\(\w*\)() {\s*[\W]*\(.*\)$/\1 \2 \3/' 
+   cat $0 | grep ^c[0-9] | grep -v c0exit | sed 's/^c\([0-9]\)\(\w*\)() {\s*[\W]*\(.*\)$/\1 \2 \3/'
    exit 0
 fi
 
