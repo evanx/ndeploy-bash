@@ -306,11 +306,11 @@ which includes the `actualCommit` SHA according to `git log` e.g. for `HEAD` at 
 ```
 where we `hsetnx` response hashes e.g. `demo:ndeploy:res:8` (matching the `req:8` request).
 
-Finally we push the request `id` to the `:res` list.
+We push the request `id` to the `:res` list.
 ```shell
   lpush $ns:res $id
 ```
-We can now `lrem :req:pending $id`
+ Fiinally we `lrem` the if from the `:pending` list
 ```shell
   lrem $ns:req:pending -1 $id
 ```
