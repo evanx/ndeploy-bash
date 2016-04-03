@@ -89,12 +89,13 @@ We `brpoplpush` a request `id` and `hget` its request details, namely:
 - optional `commit` SHA - otherwise defaulted to `HEAD`
 - optional `tag`
 
-So the `req` hashes contain the git URL at least:
+So the request hashes contain the git URL at least:
 ```
 hgetall demo:ndeploy:req:8
 1) "git"
 2) "https://github.com/evanx/hello-component"
 ```
+In this case, we default to `HEAD` of the `master` branch.
 
 Let's implement this service in bash:
 ```shell
