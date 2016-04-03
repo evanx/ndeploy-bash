@@ -9,9 +9,10 @@ This microservice should `git clone` and `npm install` repos according to a Redi
 - the service must shutdown when its hashes key in Redis has expired (or was deleted)
 - we expire the service key in 120 seconds
 
-This service is not particularly useful for manual purposes. It is intended for the orchestration of a distributed system of microservices. An orchestration service named `rcontrol` is planned, that requires `ndeploy.` For an overview of these related services, see: https://github.com/evanx/mpush-redis/blob/master/related.md
-
 Since the timeout of the routine blocking pop causes the script to exit, the service is "ephemeral."
+
+This service is not particularly useful for manual purposes. It is intended for the orchestration of a distributed system of microservices. Other orchestration services are planned, that require `ndeploy.` For an overview of these related services, see: https://github.com/evanx/mpush-redis/blob/master/related.md
+
 
 ### bash
 
