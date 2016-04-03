@@ -299,7 +299,7 @@ We can inspect the response metadata as follows:
 7) "actualCommit"
 8) "c6a9326f46a92d1f7edc4d2a426c583ec8f168ad"
 ```
-which includes the `actualCommit` SHA according to `git log` e.g. for `HEAD` at this time:
+which includes the `actualCommit` SHA according to `git log` e.g. for `HEAD` at the time of the checkout:
 ```shell
   actualCommit=`git log | head -1 | cut -d' ' -f2`
   hsetnx $ns:res:$id actualCommit $actualCommit
