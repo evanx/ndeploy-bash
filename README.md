@@ -99,7 +99,7 @@ In this case, we default to `HEAD` of the `master` branch.
 
 Let's implement this service in bash:
 ```shell
-c0pop() {
+c0pop() { # popTimeout
   popTimeout=$1
   redis1 exists $serviceKey
   id=`brpoplpush $ns:req $ns:pending $popTimeout`
@@ -115,7 +115,7 @@ Note that our `redis1` utility function expects a reply of `1` and otherwise err
 
 Otherwise we loop forever as follows:
 ```shell
-c1loop() {
+c1loop() { # popTimeout
    popTimeout=$1
    while true
    do
@@ -139,6 +139,13 @@ $ bin/ndeploy loop 60
 ```
 where this will call `c1loop 60` i.e. with a parameter of `60` for the `popTimeout` seconds.
 
+To help, we print out the commands:
+```shell
+evans@eowyn:~/ndeploy-bash$ bin/ndeploy
+1 loop # popTimeout
+1 popped # id
+1 pop # popTimeout
+```
 
 ##### Service expiry
 

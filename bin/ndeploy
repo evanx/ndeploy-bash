@@ -7,7 +7,7 @@ set -u -e
 
 if [ $# -eq 0 ]
 then
-   cat $0 | grep ^c[0-9] | grep -v c0exit | sed 's/^c\([0-9]\)\(\w*\)() {\s*[\W]*\(.*\)$/\1 \2 \3/'
+   cat $0 | grep ^c[0-9] | grep -v c0exit | sed 's/^c\([0-9]\)\(\w*\)() {\s*[\W]*\(.*\)$/\1 \2 \3/' | sort
    exit 0
 fi
 
@@ -229,6 +229,15 @@ c0exit() {
 }
 
 trap c0exit exit
+
+c1loop() { # popTimeout
+   popTimeout=$1
+   while true
+   do
+     c0pop $popTimeout
+     sleep 4
+   done
+}   
 
 c1popped() { # id
   id=$1
