@@ -1,17 +1,23 @@
 
 ## ndeploy-bash
 
-This microservice should `git clone` and `npm install` repos according to a Redis-based request.
+This microservice should `git clone` and `npm install` repos according to a Redis-based request:
+- it performs a blocking pop on an Redis list for an incoming request
+- request/response pairs are assigned a unique id by incrementing a Redis serial number
+- information is exchanged via Redis request/response hashes
+- an async response notification is published via a Redis list
+- the service must shutdown when its hashes key in Redis has expired (or was deleted)
+- we expire the service key in 120 seconds
 
-This service performs a blocking pop on an Redis list for incoming request. Request/response pairs are assigned a unique id, by incrementing a Redis serial number. Information is exchanged via Redis hashes, and notifications via Redis lists.
+This service is not particularly useful for manual purposes. It is intended for the orchestration of a distributed system of microservices. A further service named `rcontrol` is planned, which surely requires `ndeploy.` For an overview of these related services, see: https://github.com/evanx/mpush-redis/blob/master/related.md
 
-This service is not particularly useful for casual purposes. However it is intended for the orchestration of a distributed system of microservices. A further service named `rcontrol` is planned, which will require `ndeploy.` For an overview of these related services, see: https://github.com/evanx/mpush-redis/blob/master/related.md
+Since the timeout of the routine blocking pop causes the script to exit, the service is "ephemeral."
 
-As an exercise, this service is implemented in `bash.` We improve robustness by `set -e` i.e. by automatically exiting when any command "errors" i.e. returns nonzero. As such, we can use `grep` to sanity-check Redis replies, and exit if the reply is not as expected.
+### bash
 
-Since the routine blocking pop causes the script to exit, the service is "ephemeral." We expire the service key in 120 seconds. The service must deactivate and exit when its service key has expired (or was deleted).
+As an exercise, this service is implemented in `bash.` We improve its robustness by `set -e` i.e. by automatically exiting when any command "errors" i.e. returns nonzero. We can use `grep` to check Redis replies and exit if the reply is not as expected.
 
-We might start a new service instance every minute via `crond.` Since its maximum TTL is 2 minutes, this ensures that at most two instances are running concurrently.
+Any number of redundant instances is supported. We might start a new service instance every minute via `crond.` Since its maximum TTL is 2 minutes, this ensures that at most two instances are running concurrently.
 
 
 ### Status
