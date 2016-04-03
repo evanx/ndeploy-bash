@@ -215,7 +215,7 @@ We run a test service instance in the background that will pop a single request 
 ```
 $ ndeploy pop 60 &
 ```
-where the pop timeout is `60` seconds, after which it will error.
+where the blocking pop timeout is specified as `60` seconds.
 
 This is commanded as follows:
 ```
@@ -231,11 +231,13 @@ Incidently, the default `serviceDir` is formatted from the `ns` as follows:
 ```shell
 serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 ```
+where any semi-colon in the `ns` is converted to a dash in the `deployDir.`
+
 
 ##### git clone
 
 The service must:
-- `git clone` the URL e.g. from Github, into the directory `.ndeploy/demo/$id/master`
+- `git clone` the URL e.g. from Github, into the directory: `.ndeploy/demo/$id/master`
 - `git checkout $commit` if a commit hash is specified in the `:req:$id` hashes
 
 ```shell
@@ -247,7 +249,7 @@ The service must:
   fi
   hsetnx $ns:res:$id cloned `stat -c %Z $deployDir`
 ```
-where we set the `cloned` timestamp to the `modtime` of the `deployDir.`
+where we set the `cloned` timestamp to the modtime of the `deployDir.`
 
 
 ###### npm install
@@ -259,7 +261,7 @@ where we set the `cloned` timestamp to the `modtime` of the `deployDir.`
     hsetnx $ns:res:$id npmInstalled `stat -c %Z node_modules`
   fi
 ```
-where we set the `npmInstalled` timestamp to the `modtime` of `node_modules/.`
+where we set the `npmInstalled` timestamp to the modtime of `node_modules/.`
 
 Let's manually check the `package.json` for this deployment:
 ```shell
