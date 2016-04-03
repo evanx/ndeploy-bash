@@ -2,24 +2,10 @@
 
 set -u -e
 
-# vars
+# env context
 
-serviceKey=''
-
-# context
-
-ns='demo:ndeploy'
-rediscli='redis-cli -n 13'
-
-if ! set | grep '^ns='
-then
-  ns='demo:ndeploy'
-fi
-
-if ! set | grep '^rediscli='
-then
-  rediscli='redis-cli -n 13'
-fi
+ns=${ns:=demo\:ndeploy}
+rediscli=${rediscli:=redis-cli -n 13}
 
 # logging
 
@@ -195,13 +181,14 @@ rincr() {
 
 serviceId=`rincr service | tail -1`
 serviceKey="$ns:service:$serviceId"
+serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
+info $serviceDir
 redis0 exists $serviceKey
 hsetnx $serviceKey host `hostname -s`
 hsetnx $serviceKey pid $$
 hsetnx $serviceKey started `$rediscli time | head -1`
 expire $serviceKey 120
 hgetall $serviceKey
-serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 mkdir -p $serviceDir && cd $serviceDir || exit 1
 info pwd `pwd` $serviceDir
 
