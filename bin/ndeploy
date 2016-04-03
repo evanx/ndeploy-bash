@@ -216,6 +216,7 @@ c1popped() {
   git=`$rediscli hget $ns:req:$id git | grep '^http\|^git@'`
   branch=`hgetd master $ns:req:$id branch`
   commit=`$rediscli hget $ns:req:$id commit`
+  tag=`$rediscli hget $ns:req:$id tag`
   cd $serviceDir
   ls -lht
   deployDir="$serviceDir/$id"
@@ -230,6 +231,10 @@ c1popped() {
   then
     echo "INFO git checkout $commit -- $git $branch"
     git checkout $commit
+  elif [ -n "$tag" ]
+  then
+    echo "INFO git checkout tags/$tag -- $git $tag"
+    git checkout tags/$tag
   fi
   hsetnx $ns:res:$id cloned `stat -c %Z $deployDir`
   if [ -f package.json ]
@@ -276,6 +281,22 @@ c1req() {
   echo $id
 }
 
+c3req() {
+  debug c3req $@
+  [ $# -eq 3 ]
+  gitUrl="$1"
+  branch="$2"
+  commit="$3"
+  id=`incr $ns:req:id`
+  hsetnx $ns:req:$id git $gitUrl
+  [ -n "$branch" -a "$branch" != 'master' ] && hsetnx $ns:req:$id branch $branch
+  [ -n "$commit" -a "$commit" != 'HEAD' ] && hsetnx $ns:req:$id commit $commit
+  #[ -n "$tag" ] && hsetnx $ns:req:$id tag $tag
+  lpush $ns:req $id
+  debug "OK $id $gitUrl"
+  echo $id
+}
+
 c2brpop() {
   reqId=$1
   popTimeout=$2
@@ -290,15 +311,23 @@ c2brpop() {
 }
 
 c2deploy() {
-  gitUrl=$1
-  popTimeout=$2
+  popTimeout=$1
+  gitUrl=$2
   id=`c1req $gitUrl | tail -1`
   c2brpop $id $popTimeout
 }
 
+c4deploy() {
+  [ $# -eq 4 ]
+  resTimeout=$1
+  shift
+  id=`c3req $@ | tail -1`
+  c2brpop $id $resTimeout
+}
+
 c0tdeploy() {
   set -e
-  c2deploy https://github.com/evanx/hello-component 60
+  c4deploy 60 https://github.com/evanx/hello-component master HEAD
 }
 
 c0tclear13() {
