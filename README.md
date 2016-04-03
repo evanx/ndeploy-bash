@@ -369,6 +369,6 @@ where we scan from the tail of the list via the `-1` parameter.
 See: https://github.com/evanx/mpush-redis/blob/master/bin/ndeploy
 
 
-### Further reading
+#### Further reading
 
 Related projects and further plans: https://github.com/evanx/mpush-redis/blob/master/related.md
