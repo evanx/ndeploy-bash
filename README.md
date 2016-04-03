@@ -145,7 +145,7 @@ At this expire interval, if starting a new instance every minute via the cron, t
 
 We push metrics into Redis:
 ```shell
-incr $ns:metrics:service:started
+hincrby $ns:service:metric:started count 1
 ```
 where these metrics are published/alerted by another microservice i.e. out the scope.
 

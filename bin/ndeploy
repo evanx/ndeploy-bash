@@ -155,6 +155,14 @@ llen() {
   echo $llen | grep '^[1-9][0-9]*$'
 }
 
+hincrby() {
+  [ $# -eq 2 ]
+  reply=`$rediscli hincrby $*`
+  debug "hincrby $* - $reply"
+  echo $reply | grep '^[1-9][0-9]*$'
+}
+
+
 hgetd() {
   [ $# -eq 3 ]
   defaultValue=$1
@@ -169,7 +177,7 @@ hgetd() {
   fi
 }
 
-rincr() {
+incrid() {
   [ $# -eq 1 ]
   name=$1
   id=`incr $ns:$name:id`
@@ -179,7 +187,8 @@ rincr() {
 
 # init service, to expire after 120 seconds
 
-serviceId=`rincr service | tail -1`
+hincrby $ns:service:metric:started count 1
+serviceId=`incrid service | tail -1`
 serviceKey="$ns:service:$serviceId"
 serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
 info $serviceDir
