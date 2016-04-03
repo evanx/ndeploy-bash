@@ -319,7 +319,7 @@ where we scan from the tail of the list.
 
 ### Resources
 
-See: https://github.com/evanx/mpush-redis/blob/master/scripts/ndeploy.sh
+See: https://github.com/evanx/mpush-redis/blob/master/bin/ndeploy
 
 
 ### Further reading
