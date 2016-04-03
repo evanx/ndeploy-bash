@@ -9,7 +9,7 @@ This ephemeral microservice should `git clone` and `npm install` repos according
 - the service must shutdown when its hashes key in Redis has expired (or was deleted)
 - we expire the service key in 120 seconds
 
-Since the routine timeout of the blocking pop command causes the script to exit, each service instance is clearly ephemeral.
+Since the routine timeout of the blocking pop command causes the script to exit, each service instance is clearly ephemeral. However it is stateless i.e. we can run as many concurrent instances as we wish.
 
 This service is not particularly useful for manual purposes. It is intended for the orchestration of a distributed system of microservices. Other orchestration services are planned, that require `ndeploy.` For an overview of these related services, see: https://github.com/evanx/mpush-redis/blob/master/related.md
 
@@ -36,6 +36,7 @@ Beware the defaults:
 ns='demo:ndeploy'
 rediscli='redis-cli -n 13'
 ```
+where `ns` is the "namespace" used to prefix keys.
 
 ### Service implementation
 
