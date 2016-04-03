@@ -11,19 +11,19 @@ rediscli=${rediscli:=redis-cli -n 13}
 # logging
 
 debug() {
-  >&2 echo "DEBUG $serviceKey - $*"
+  >&2 echo "DEBUG client $*"
 }
 
 info() {
-  >&2 echo "INFO $serviceKey - $*"
+  >&2 echo "INFO client $*"
 }
 
 warn() {
-  >&2 echo "WARN $serviceKey - $*"
+  >&2 echo "WARN client - $*"
 }
 
 error() {
-  >&2 echo "ERROR $serviceKey - $*"
+  >&2 echo "ERROR client $*"
 }
 
 # lifecycle
@@ -181,104 +181,71 @@ count() {
    hincrbyq $ns:service:metric:$1 count 1
 }
 
-# init service, to expire after 120 seconds
+# test
 
-serviceId=`incrid service | tail -1`
-serviceKey="$ns:service:$serviceId"
-count started $serviceId $$
-serviceDir=$HOME/.ndeploy/`echo $ns | tr ':' '-'`
-info $serviceDir
-redis0 exists $serviceKey
-hsetnx $serviceKey host `hostname -s`
-hsetnx $serviceKey pid $$
-hsetnx $serviceKey started `$rediscli time | head -1`
-expire $serviceKey 120
-hgetall $serviceKey
-mkdir -p $serviceDir && cd $serviceDir || exit 1
-info pwd `pwd` $serviceDir
-
-
-# service functions
-
-v1popError() {
-  id=$1
-  error "pop: $*"
-  count popError $id
-  $rediscli lpush $ns:req $id
-  $rediscli lrem $ns:req:pending -1 $id
-  exit 9
+c1req() {
+  gitUrl="$1"
+  id=`incr $ns:req:id`
+  hsetnx $ns:req:$id git $gitUrl
+  lpush $ns:req $id
+  debug "OK $id $gitUrl"
+  echo $id
 }
 
-pendingId=''
-
-c0exit() {
-  if [ -n "$pendingId" ]
-  then
-    v1popError $pendingId
-  fi
+c3req() {
+  debug c3req $@
+  [ $# -eq 3 ]
+  gitUrl="$1"
+  branch="$2"
+  commit="$3"
+  id=`incr $ns:req:id`
+  hsetnx $ns:req:$id git $gitUrl
+  [ -n "$branch" -a "$branch" != 'master' ] && hsetnx $ns:req:$id branch $branch
+  [ -n "$commit" -a "$commit" != 'HEAD' ] && hsetnx $ns:req:$id commit $commit
+  #[ -n "$tag" ] && hsetnx $ns:req:$id tag $tag
+  lpush $ns:req $id
+  debug "OK $id $gitUrl"
+  echo $id
 }
 
-trap c0exit exit
-
-c1popped() {
-  id=$1
-  count popped $id
-  git=`$rediscli hget $ns:req:$id git | grep '^http\|^git@'`
-  branch=`hgetd master $ns:req:$id branch`
-  commit=`$rediscli hget $ns:req:$id commit`
-  tag=`$rediscli hget $ns:req:$id tag`
-  cd $serviceDir
-  ls -lht
-  deployDir="$serviceDir/$id"
-  [ ! -d $deployDir ]
-  hsetnx $ns:res:$id deployDir $deployDir
-  expire $ns:res:$id 900 # ttl sufficient for git clone and npm install
-  echo "INFO deployDir $deployDir"
-  mkdir -p $deployDir && cd $deployDir
-  git clone $git -b $branch $branch
-  cd $branch
-  if [ -n "$commit" ]
+c2brpop() {
+  reqId=$1
+  popTimeout=$2
+  resId=`brpop $ns:res $popTimeout | tail -1`
+  if [ "$reqId" != "$resId" ]
   then
-    echo "INFO git checkout $commit -- $git $branch"
-    git checkout $commit
-  elif [ -n "$tag" ]
-  then
-    echo "INFO git checkout tags/$tag -- $git $tag"
-    git checkout tags/$tag
+    warn "mismatched ids: $reqId, $resId: lpush $ns:res $resId"
+    lpush $ns:res $resId
+    return 1
   fi
-  hsetnx $ns:res:$id cloned `stat -c %Z $deployDir`
-  if [ -f package.json ]
-  then
-    cat package.json
-    npm --silent install
-    hsetnx $ns:res:$id npmInstalled `stat -c %Z node_modules`
-    count npmInstalled $id
-  fi
-  actualCommit=`git log | head -1 | cut -d' ' -f2`
-  echo "INFO actualCommit $actualCommit"
-  hsetnx $ns:res:$id actualCommit $actualCommit
-  deployDir=`$rediscli hget $ns:res:$id deployDir`
-  debug "OK popped $id $deployDir"
-  echo $deployDir | grep '/'
+  $rediscli hget $ns:res:$id deployDir | grep '/'
 }
 
-c1pop() {
+c2deploy() {
   popTimeout=$1
-  expire $serviceKey $popTimeout
-  redisCommand="brpoplpush $ns:req $ns:pending $popTimeout"
-  id=`$rediscli $redisCommand | grep '^[1-9][0-9]*$'`
-  debug "popped $id"
-  [ -n $id ]
-  pendingId=$id
-  expire $ns:req:$id 10
-  hgetall $ns:req:$id
-  c1popped $id
-  redis1 sadd $ns:res:ids $id
-  redis1 persist $ns:res:$id
-  hgetall $ns:res:$id
-  lpush $ns:res $id
-  pendingId=''
+  gitUrl=$2
+  id=`c1req $gitUrl | tail -1`
+  c2brpop $id $popTimeout
 }
+
+c4deploy() {
+  [ $# -eq 4 ]
+  resTimeout=$1
+  shift
+  id=`c3req $@ | tail -1`
+  c2brpop $id $resTimeout
+}
+
+c0tdeploy() {
+  set -e
+  c4deploy 60 https://github.com/evanx/hello-component master HEAD
+}
+
+c0tclear13() {
+  rm -rf $HOME/.ndeploy/demo-ndeploy
+  redis-cli -n 13 keys "$ns:*" | xargs -n1 redis-cli -n 13 del
+}
+
 
 # command
 
