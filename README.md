@@ -5,17 +5,13 @@ This microservice should `git clone` and `npm install` repos according to a Redi
 
 This service performs a blocking pop on an Redis list for incoming request. Request/response pairs are assigned a unique id, by incrementing a Redis serial number. Information is exchanged via Redis hashes, and notifications via Redis lists.
 
-This is not particularly useful for casual purposes. However it is intended for the orchestration of a distributed system of microservices.
+This service is not particularly useful for casual purposes. However it is intended for the orchestration of a distributed system of microservices. A further service named `rcontrol` is planned, which will require `ndeploy.` For an overview of these related services, see: https://github.com/evanx/mpush-redis/blob/master/related.md
 
-In fact a further service named `rcontrol` is planned, which will require `ndeploy.` For an overview of these related projects, with the goal of demonstrating a distributed web server, using Redis-based microservices, see: https://github.com/evanx/mpush-redis/blob/master/related.md
+As an exercise, this service is implemented in `bash.` We improve robustness by `set -e` i.e. by automatically exiting when any command "errors" i.e. returns nonzero. As such, we can use `grep` to sanity-check Redis replies, and exit if the reply is not as expected.
 
-As an exercise, it is implemented in `bash` - my other favourite programming language, through force of habit managing Linux production environments.
+Since the routine blocking pop causes the script to exit, the service is "ephemeral." We expire the service key in 120 seconds. The service must deactivate and exit when its service key has expired (or was deleted).
 
-Writing robust bash scripts is challenging, and this must be mitigated by `set -u -e` i.e. exiting on any error, i.e. any command exiting with nonzero exit code, including `grep` et al.
-
-For example, we start a new service instance every minute via `crond,` and expire our service keys every 120 seconds, to ensure that at most two instances are provisioned.
-
-We demonstrate that that safely co-ordinating and isolating such scripts is relatively simple when using a Redis-based service lifecycle model.
+We might start a new service instance every minute via `crond.` Since its maximum TTL is 2 minutes, this ensures that at most two instances are running concurrently.
 
 
 ### Status
@@ -50,12 +46,12 @@ The script is configured via environment variables:
 
 #### Service
 
-Note that this service uses the same Redis-based service lifecycle model as our `mpush-redis` Node service, as described in the document: https://github.com/evanx/mpush-redis/blob/master/service.md
+Note that this service uses the same Redis-based service lifecycle model as our `mpush-redis` Node service. This is described in the document: https://github.com/evanx/mpush-redis/blob/master/service.md.
 
 
 ##### Self-registration
 
-In this case, we `incr` a unique sequential `serviceId.` We `hsetnx` the details on the `serviceKey` and set its expiry:
+In this case, we `incr` a unique sequential `serviceId.` We `hsetnx` the details on the `serviceKey:`
 ```shell
 serviceId=`incr $ns:service:id`
 serviceKey="$ns:service:$serviceId"
@@ -68,7 +64,7 @@ sadd $ns:service:ids $serviceId
 ```
 Clearly the `serviceKey` is unique, but nevertheless for sanity we use `hsetnx` rather than `hset.` Our `hsetnx` utility function expects a reply of `1` and otherwise errors, and so the script will exit.
 
-For example:
+For example, service instance hashes are as follows:
 ```
 hgetall demo:ndeploy:service:8
 1) "host"
@@ -78,6 +74,7 @@ hgetall demo:ndeploy:service:8
 5) "started"
 6) "1459637169"
 ```
+
 
 ##### Blocking pop
 
