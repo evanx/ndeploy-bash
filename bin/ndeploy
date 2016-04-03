@@ -48,15 +48,15 @@ redise() {
   expect=$1
   shift
   redisCommand="$@"
-  if echo "$redisCommand" | grep -qv " $ns:"
+  if ! echo "$redisCommand" | grep -q " $ns:"
   then
-    >&2 echo "WARN $redisCommand"
+    warn "$redisCommand"
     return 1
   fi
   reply=`$rediscli $redisCommand`
-  if ! echo "$reply" | grep -q "^${expect}$"
+  if [ "$reply" != $expect ]
   then
-    >&2 echo "WARN $redisCommand - reply $reply - not $expect"
+    warn "$redisCommand - reply $reply - not $expect"
     return 2
   else
     return 0
