@@ -178,7 +178,7 @@ c1deploy() {
 }
 ```
 
-Note that since `{branch, commmit, tag}` have not been specified, we must to `master` and `HEAD.`
+Note that since `{branch, commmit, tag}` have not been specified, we default `master` and `HEAD.`
 
 The script will `incr` and `lpush` the request id as follows:
 ```shell
