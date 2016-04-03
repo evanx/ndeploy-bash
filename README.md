@@ -83,7 +83,7 @@ hgetall demo:ndeploy:service:8
 
 ##### Blocking pop
 
-We `brpoplpush` a request `id` and `hget` its request details:
+We `brpoplpush` a request `id` and `hget` its request details, namely:
 - mandatory `git` URL
 - optional `branch` - otherwise defaulted to `master`
 - optional `commit` SHA - otherwise defaulted to `HEAD`
