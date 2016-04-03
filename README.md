@@ -141,6 +141,7 @@ We expire its `serviceKey` in 120 seconds:
 ```shell
 redis1 expire $serviceKey 120
 ```
+
 At this expire interval, if starting a new instance every minute via the cron, then we should observe at most two instances running at a time. If each instance errors immediately, then no instances will be running for the minute.
 
 We push metrics into Redis:
