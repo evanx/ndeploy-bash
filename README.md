@@ -62,9 +62,9 @@ serviceKey="$ns:service:$serviceId"
 startedTimestamp=`$rediscli time | head -1`
 count started $startedTimestamp
 hsetnx $serviceKey started $startedTimestamp
+expire $serviceKey 120
 hsetnx $serviceKey host `hostname -s`
 hsetnx $serviceKey pid $$
-expire $serviceKey 120
 sadd $ns:service:ids $serviceId
 ```
 Clearly the `serviceKey` is unique, but nevertheless for sanity we use `hsetnx` rather than `hset.` Our `hsetnx` utility function expects a reply of `1` and otherwise errors, and so the script will exit.
