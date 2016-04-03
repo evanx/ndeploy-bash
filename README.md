@@ -310,7 +310,7 @@ We push the request `id` to the `:res` list.
 ```shell
   lpush $ns:res $id
 ```
- Fiinally we `lrem` the if from the `:pending` list
+ Fiinally we `lrem` the request id from the pending list:
 ```shell
   lrem $ns:req:pending -1 $id
 ```
