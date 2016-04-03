@@ -37,17 +37,6 @@ grepq() {
   grep -q "^${1}$"
 }
 
-grepe() {
-  [ $# -eq 1 ]
-  expect="$1"
-  if ! cat | grep -q "$expect"
-  then
-    echo "WARN $expect"
-    return 0
-  else
-    return 1
-  fi
-}
 
 # redis utils
 
@@ -58,16 +47,16 @@ redis() {
 redise() {
   expect=$1
   shift
-  rcmd="$@"
-  if echo "$rcmd" | grep -qv " $ns:"
+  redisCommand="$@"
+  if echo "$redisCommand" | grep -qv " $ns:"
   then
-    >&2 echo "WARN $rcmd"
+    >&2 echo "WARN $redisCommand"
     return 1
   fi
-  reply=`$rediscli $rcmd`
+  reply=`$rediscli $redisCommand`
   if ! echo "$reply" | grep -q "^${expect}$"
   then
-    >&2 echo "WARN $rcmd - reply $reply - not $expect"
+    >&2 echo "WARN $redisCommand - reply $reply - not $expect"
     return 2
   else
     return 0
@@ -262,8 +251,8 @@ c1popped() {
 c1pop() {
   popTimeout=$1
   expire $serviceKey $popTimeout
-  rcmd="brpoplpush $ns:req $ns:pending $popTimeout"
-  id=`$rediscli $rcmd | grep '^[1-9][0-9]*$'`
+  redisCommand="brpoplpush $ns:req $ns:pending $popTimeout"
+  id=`$rediscli $redisCommand | grep '^[1-9][0-9]*$'`
   debug "popped $id"
   [ -n $id ]
   pendingId=$id
