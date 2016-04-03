@@ -40,7 +40,7 @@ where `ns` is the "namespace" used to prefix keys.
 
 ### Service implementation
 
-Let's walk-through the `ndeploy` script: https://github.com/evanx/ndeploy-bash/blob/master/bin/ndeploy
+Let's walk through the `ndeploy` script: https://github.com/evanx/ndeploy-bash/blob/master/bin/ndeploy
 
 Firstly, to make the script robust, we must exit on error:
 ```shell
