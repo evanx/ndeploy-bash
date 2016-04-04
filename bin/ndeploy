@@ -302,7 +302,7 @@ c1pop() { # popTimeout
 
 # client requests
 
-c1req() {
+c1req() { # gitUrl - create a new request
   gitUrl="$1"
   id=`incr $ns:req:id`
   hsetnx $ns:req:$id git $gitUrl
@@ -311,7 +311,7 @@ c1req() {
   echo $id
 }
 
-c3req() {
+c3req() { # gitUrl branch commit - create a new request
   debug c3req $@
   [ $# -eq 3 ]
   gitUrl="$1"
@@ -327,7 +327,7 @@ c3req() {
   echo $id
 }
 
-c2brpop() {
+c2brpop() { # reqId popTimeout - brpop next response
   reqId=$1
   popTimeout=$2
   resId=`brpop $ns:res $popTimeout | tail -1`
@@ -340,7 +340,7 @@ c2brpop() {
   $rediscli hget $ns:res:$resId deployDir | grep '/'
 }
 
-c2deploy() {
+c2deploy() { # popTimeout gitUrl - request new deploy
   popTimeout=$1
   gitUrl=$2
   id=`c1req $gitUrl | tail -1`
