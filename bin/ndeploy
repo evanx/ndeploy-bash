@@ -250,6 +250,7 @@ c1popped() { # id
   ls -lht
   deployDir="$serviceDir/$id"
   [ ! -d $deployDir ]
+  sadd $ns:ids $id
   hsetnx $ns:res:$id deployDir $deployDir
   expire $ns:res:$id 900 # ttl sufficient for git clone and npm install
   echo "INFO deployDir $deployDir"

@@ -1,6 +1,7 @@
 
-ns='demo:mpush'
-dbn=1
+ns='demo:ndeploy'
+dbn=13
+rediscli='redis-cli -n 13'
 
 c1dbn() {
   dbn=$1
@@ -8,29 +9,10 @@ c1dbn() {
   rediscli="redis-cli -n $dbn"
 }
 
-c0flush() {
-  $rediscli keys "$ns:*" | xargs -n1 $rediscli del
-}
-
-c0clear() {
-  for list in service:ids message:ids in pending done out0 out1 
-  do
-    key="$ns:$list"
-    echo "del $key" `$rediscli del $key`
-  done
-}
-
-c0xid() {
-  for key in `$rediscli keys "${ns}:message:xid:*" | sort`
-  do
-    echo; echo "$key"
-    $rediscli hgetall $key
-  done
-}
-
 c0metrics() {
-  for key in `$rediscli keys "${ns}:metrics:*" | sort`
+  for name in started
   do
+    key="$ns:metric:$name"
     echo; echo "$key"
     $rediscli hgetall $key
   done
@@ -61,12 +43,9 @@ c0kill() {
   echo "$id" | grep -q '^[0-9]' && c1kill $id
 }
 
-c0done() {
-  id=`$rediscli lrange $ns:message:ids -1 -1`
-  if [ -n "$id" ]
-  then
-     $rediscli lpush "$ns:done" $id
-  fi
+c0killall() {
+  id=`$rediscli lrange $ns:service:ids 0 0`
+  echo "$id" | grep -q '^[0-9]' && c1kill $id
 }
 
 c1rhgetall() {
@@ -82,8 +61,7 @@ c1rhgetall() {
   fi
 }
 
-c0state() {
-  echo
+c0ttl() {
   for key in `$rediscli keys "${ns}:*" | sort`
   do
     ttl=`$rediscli ttl $key | grep ^[0-9]`
@@ -94,40 +72,30 @@ c0state() {
       echo $key
     fi
   done
-  for list in service:ids message:ids in pending done out0 out1 
-  do
-    key="$ns:$list"
-    echo "llen $key" `$rediscli llen $key` '--' `$rediscli lrange $key 0 99`
-  done
+}
+
+c0llen() {
+   for list in service:ids pending ids
+   do
+     key="$ns:$list"
+     echo "llen $key" `$rediscli llen $key` '--' `$rediscli lrange $key 0 99`
+   done
+}
+
+c0state() {
+  c0ttl
+  c0llen
   c1rhgetall service
-  c1rhgetall message
-}
-
-c1push() {
-  $rediscli lpush "$ns:in" $1
-  sleep .2
-  c0xid
-  c0state
-}
-
-c0push() {
-  c1push 12345
 }
 
 c0default() {
-  $rediscli lpush "$ns:in" one
-  $rediscli lpush "$ns:in" two
-  sleep .1
   c0state
 }
 
 command=default
-if [ $# -ge 2 ]
+if [ $# -ge 1 ]
 then
-  dbn=$1
-  shift
-  c1dbn $dbn
   command=$1
   shift
-  c$#$command $@
 fi
+c$#$command $@
