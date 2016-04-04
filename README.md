@@ -3,7 +3,7 @@
 
 To celebrate a big week for `bash` with the Windows 10 announcement, we implement a ephemeral stateless microservice that will `git clone` and `npm install` repos according to a Redis-based request.
 
-- performs a "blocking pop" on a Redis list, for an incoming request
+- the service performs a "blocking pop" on a Redis list, for an incoming request
 - request/response pairs are assigned a unique id by incrementing a Redis serial number
 - information is exchanged via Redis request/response hashes
 - an async response notification is published via a Redis list
