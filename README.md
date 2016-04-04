@@ -120,7 +120,7 @@ c1loop() { # popTimeout
    popTimeout=$1
    while true
    do
-     c0pop $popTimeout
+     c1pop $popTimeout
    done
 }   
 ```
