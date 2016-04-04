@@ -300,6 +300,53 @@ c1pop() { # popTimeout
   pendingId=''
 }
 
+# client requests
+
+c1req() {
+  gitUrl="$1"
+  id=`incr $ns:req:id`
+  hsetnx $ns:req:$id git $gitUrl
+  lpush $ns:req $id
+  debug "OK $id $gitUrl"
+  echo $id
+}
+
+c3req() {
+  debug c3req $@
+  [ $# -eq 3 ]
+  gitUrl="$1"
+  branch="$2"
+  commit="$3"
+  id=`incr $ns:req:id`
+  hsetnx $ns:req:$id git $gitUrl
+  [ -n "$branch" -a "$branch" != 'master' ] && hsetnx $ns:req:$id branch $branch
+  [ -n "$commit" -a "$commit" != 'HEAD' ] && hsetnx $ns:req:$id commit $commit
+  #[ -n "$tag" ] && hsetnx $ns:req:$id tag $tag
+  lpush $ns:req $id
+  debug "OK $id $gitUrl"
+  echo $id
+}
+
+c2brpop() {
+  reqId=$1
+  popTimeout=$2
+  resId=`brpop $ns:res $popTimeout | tail -1`
+  if [ "$reqId" != "$resId" ]
+  then
+    warn "mismatched ids: $reqId, $resId: lpush $ns:res $resId"
+    lpush $ns:res $resId
+    return 1
+  fi
+  $rediscli hget $ns:res:$resId deployDir | grep '/'
+}
+
+c2deploy() {
+  popTimeout=$1
+  gitUrl=$2
+  id=`c1req $gitUrl | tail -1`
+  c2brpop $id $popTimeout
+}
+
 # command
 
 info "rediscli: $rediscli"
