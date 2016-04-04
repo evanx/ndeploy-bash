@@ -261,7 +261,7 @@ where the blocking pop timeout is specified as `60` seconds.
 
 We command test client as follows:
 ```
-$ bin/ndeploy.sh deploy 60 https://github.com/evanx/hello-component | tail -1
+$ bin/ndeploy.sh deploy https://github.com/evanx/hello-component 60 | tail -1
 ```
 where we timeout the request after 60 seconds.
 
