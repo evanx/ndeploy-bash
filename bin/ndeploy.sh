@@ -57,18 +57,18 @@ f3req() { # gitUrl branch commit - create a new request
   echo $id
 }
 
-f2brpop() { # reqId popTimeout - brpop next response
+f2brpop() { # reqId reqTimeout - brpop next response
   reqId=$1
-  popTimeout=$2
-  resId=`brpop $ns:res $popTimeout | tail -1`
-  if [ -n "$resId" ]
+  reqTimeout=$2
+  resId=`brpop $ns:res $reqTimeout | tail -1`
+  if [ -z "$resId" ]
   then
-     error "timeout ($popTimeout seconds) waiting for response (reqId $reqId)"
-     return 1
+    error "timeout ($reqTimeout seconds) waiting for response (reqId $reqId)"
+    return 1
   elif [ "$reqId" != "$resId" ]
   then
-    warn "mismatched ids: $reqId, $resId: lpush $ns:res $resId"
-    lpush $ns:res $resId
+    lpush $ns:res $reqId
+    error "mismatched ids: $reqId, $resId: lpush $ns:res $resId"
     return 1
   fi
   error=`$rediscli hget $ns:res:$resId error`
@@ -86,11 +86,11 @@ f2brpop() { # reqId popTimeout - brpop next response
   pwd
 }
 
-c2deploy() { # popTimeout gitUrl - request new deployDir
-  popTimeout=$1
-  gitUrl=$2
+c2deploy() { # gitUrl reqTimeout - request new deployDir
+  gitUrl=$1
+  reqTimeout=$2
   id=`f1req $gitUrl | tail -1`
-  f2brpop $id $popTimeout
+  f2brpop $id $reqTimeout
 }
 
 # command

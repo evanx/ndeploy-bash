@@ -195,7 +195,7 @@ This is invoked by the "demo" script to initiate a test request:
 
 ```shell
   sh bin/server-ndeploy.sh pop 10 &
-  deployDir=`bin/ndeploy.sh deploy 60 https://github.com/evanx/hello-component-class | tail -1`
+  deployDir=`bin/ndeploy.sh deploy https://github.com/evanx/hello-component-class 60 | tail -1`
 ```
 
 See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
@@ -205,11 +205,11 @@ See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
 
 We will try the following client `deploy` "command" with a `gitUrl` parameter.
 ```shell
-c2deploy() { # popTimeout gitUrl - request new deployDir
-  popTimeout=$1
+c2deploy() { # gitUrl reqTimeout - request new deployDir
+  reqTimeout=$1
   gitUrl=$2
   id=`f1req $gitUrl | tail -1`
-  f2brpop $id $popTimeout
+  f2brpop $id $reqTimeout
 }
 ```
 
@@ -237,10 +237,10 @@ The service will asynchronously respond to the client's request via a Redis list
 
 We pop responses to get the prepared `deployDir` as follows:
 ```shell
-f2brpop() { # reqId popTimeout
+f2brpop() { # reqId reqTimeout
   reqId=$1
-  popTimeout=$2
-  resId=`brpop $ns:res $popTimeout`
+  reqTimeout=$2
+  resId=`brpop $ns:res $reqTimeout | tail -1`
   ... # error handling
   hget $ns:req:$resId deployDir | grep '/'
 }
