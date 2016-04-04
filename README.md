@@ -103,14 +103,14 @@ In this case, we default to `HEAD` of the `master` branch.
 
 Let's implement this service in bash:
 ```shell
-c0pop() { # popTimeout
+c1pop() { # popTimeout
   popTimeout=$1
   redis1 exists $serviceKey
   id=`brpoplpush $ns:req $ns:pending $popTimeout`
-  [ -n "$id" ] && c1popped $id
+  [ -n "$id" ] && popped $id
 }
 ```
-where we `brpoplpush` the next request `id` and call `c1popped` with that.
+where we `brpoplpush` the next request `id` and call `popped` with that.
 
 Note that we exit if the the service key does not exist, courtesy of our `redis1` function.
 
@@ -172,7 +172,7 @@ where these metrics are published/alerted by another microservice i.e. out the s
 
 The popped id is handled as follows:
 ```shell
-c1popped() {
+popped() {
   id=$1
   hsetnx $ns:res:$id service $serviceId
   git=`hget $ns:req:$id git`
