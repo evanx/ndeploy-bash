@@ -144,7 +144,7 @@ where this will call `c1loop 60` i.e. with a parameter of `60` for the `popTimeo
 
 To help, we print out the commands:
 ```shell
-evans@eowyn:~/ndeploy-bash$ bin/server-ndeploy.sh
+~/ndeploy-bash$ bin/server-ndeploy.sh
 1 loop popTimeout
 1 pop popTimeout
 ```
