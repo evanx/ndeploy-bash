@@ -203,7 +203,7 @@ See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
 
 #### Request creation
 
-We will try the following client `deploy` "command" with a `gitUrl` parameter.
+We will try the following client `deploy` "command" with `gitUrl` and `reqTimeout` parameters.
 ```shell
 c2deploy() { # gitUrl reqTimeout - request new deployDir
   reqTimeout=$1
