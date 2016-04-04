@@ -364,7 +364,7 @@ where we scan from the tail of the list via the `-1` parameter.
 
 #### Resources
 
-Code: https://github.com/evanx/mpush-redis/blob/master/bin
+Code: https://github.com/evanx/ndeploy-bash/tree/master/bin
 
 
 #### Further reading
