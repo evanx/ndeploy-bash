@@ -205,10 +205,11 @@ See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
 
 We will try the following client `deploy` "command" with a `gitUrl` parameter.
 ```shell
-c2deploy() { # gitUrl
-  gitUrl=$1
-  id=`req $gitUrl| tail -1`
-  brpop $id
+c2deploy() { # popTimeout gitUrl - request new deployDir
+  popTimeout=$1
+  gitUrl=$2
+  id=`f1req $gitUrl | tail -1`
+  f2brpop $id $popTimeout
 }
 ```
 
@@ -216,7 +217,7 @@ Note that since `{branch, commmit, tag}` have not been specified, we expect the 
 
 We create a new client request as follows:
 ```shell
-req() { # gitUrl
+f1req() { # gitUrl
   gitUrl="$1"
   id=`nsincr $ns:req:id`
   hsetnx $ns:req:$id git $gitUrl
@@ -236,7 +237,7 @@ The service will asynchronously respond to the client's request via a Redis list
 
 We pop responses to get the prepared `deployDir` as follows:
 ```shell
-brpop() { # reqId popTimeout
+f2brpop() { # reqId popTimeout
   reqId=$1
   popTimeout=$2
   resId=`brpop $ns:res $popTimeout`

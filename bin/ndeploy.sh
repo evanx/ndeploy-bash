@@ -86,7 +86,7 @@ f2brpop() { # reqId popTimeout - brpop next response
   pwd
 }
 
-c2deploy() { # popTimeout gitUrl - request new deploy
+c2deploy() { # popTimeout gitUrl - request new deployDir
   popTimeout=$1
   gitUrl=$2
   id=`f1req $gitUrl | tail -1`
