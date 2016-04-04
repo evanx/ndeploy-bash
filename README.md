@@ -50,7 +50,7 @@ where `ns` is the "namespace" used to prefix keys.
 
 #### Implementation
 
-Let's walk through the `ndeploy` script: https://github.com/evanx/ndeploy-bash/blob/master/bin/ndeploy
+Let's walk through the `server-ndeploy` script: https://github.com/evanx/ndeploy-bash/blob/master/bin/server-ndeploy.sh
 
 The script is configured via environment variables:
 - `ns` - the Redis "namespace" e.g. `demo:ndeploy`
@@ -138,16 +138,15 @@ fi
 ```
 We can call command functions from the command-line as follows:
 ```shell
-$ bin/ndeploy loop 60
+$ bin/server-ndeploy.sh loop 60
 ```
 where this will call `c1loop 60` i.e. with a parameter of `60` for the `popTimeout` seconds.
 
 To help, we print out the commands:
 ```shell
-evans@eowyn:~/ndeploy-bash$ bin/ndeploy
-1 loop # popTimeout
-1 popped # id
-1 pop # popTimeout
+evans@eowyn:~/ndeploy-bash$ bin/server-ndeploy.sh
+1 loop popTimeout
+1 pop popTimeout
 ```
 
 #### Service expiry
@@ -190,13 +189,13 @@ where `c5deploy` will `git clone` and `npm install` the package into `deployDir.
 
 #### Demo client
 
-Let's walk through the client-side request script: https://github.com/evanx/ndeploy-bash/blob/master/scripts/test-client.sh
+Let's walk through the client-side request script: https://github.com/evanx/ndeploy-bash/blob/master/bin/ndeploy.sh
 
 This is invoked by the "demo" script to initiate a test request:
 
 ```shell
-  sh bin/ndeploy pop 10 &
-  deployDir=`sh scripts/test-client.sh deploy | tail -1`
+  sh bin/server-ndeploy.sh pop 10 &
+  deployDir=`bin/ndeploy.sh deploy 60 https://github.com/evanx/hello-component-class | tail -1`
 ```
 
 See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
@@ -204,12 +203,12 @@ See: https://github.com/evanx/ndeploy-bash/blob/master/scripts/demo.sh
 
 #### Request creation
 
-We try the following client `deploy` "command" with a `gitUrl` parameter.
+We will try the following client `deploy` "command" with a `gitUrl` parameter.
 ```shell
-c1deploy() { # gitUrl
+c2deploy() { # gitUrl
   gitUrl=$1
-  id=`c1req | tail -1`
-  c1brpop $id
+  id=`req $gitUrl| tail -1`
+  brpop $id
 }
 ```
 
@@ -217,7 +216,7 @@ Note that since `{branch, commmit, tag}` have not been specified, we expect the 
 
 We create a new client request as follows:
 ```shell
-c1req() {
+req() { # gitUrl
   gitUrl="$1"
   id=`nsincr $ns:req:id`
   hsetnx $ns:req:$id git $gitUrl
@@ -237,18 +236,14 @@ The service will asynchronously respond to the client's request via a Redis list
 
 We pop responses to get the prepared `deployDir` as follows:
 ```shell
-c1brpop() {
-  reqId="$1"
-  resId=`brpop $ns:res`
-  if [ "$reqId" != $id ]
-  then
-    >&2 echo "mismatched id: $resId"
-    lpush $ns:res $resId
-    sleep 1
-    return 1
-  fi
+brpop() { # reqId popTimeout
+  reqId=$1
+  popTimeout=$2
+  resId=`brpop $ns:res $popTimeout`
+  ... # error handling
   hget $ns:req:$resId deployDir | grep '/'
 }
+
 ```
 where we match the request id, and then output the `deployDir,` to complete the test successfully.
 
@@ -257,17 +252,19 @@ If the response id does not match our request, then we `lpush` the id back into 
 
 #### Test server
 
-We run a test service instance in the background that will pop a single request and then exit:
+We run a service instance in the background that will pop a single request and then exit:
 ```
-$ bin/ndeploy pop 60 &
+$ bin/server-ndeploy.sh pop 60 &
 ```
 where the blocking pop timeout is specified as `60` seconds.
 
 We command test client as follows:
 ```
-$ scripts/test-client.sh deploy https://github.com/evanx/hello-component | tail -1
+$ bin/ndeploy.sh deploy 60 https://github.com/evanx/hello-component | tail -1
 ```
-This will error, or echo the directory with the successful deployment:
+where we timeout the request after 60 seconds.
+
+This echo the directory with the successful deployment:
 ```
 /home/evans/.ndeploy/demo-ndeploy/8
 ```
@@ -366,7 +363,7 @@ where we scan from the tail of the list via the `-1` parameter.
 
 #### Resources
 
-See: https://github.com/evanx/mpush-redis/blob/master/bin/ndeploy
+Code: https://github.com/evanx/mpush-redis/blob/master/bin
 
 
 #### Further reading
