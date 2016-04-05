@@ -22,7 +22,7 @@ As an exercise, this service is implemented in `bash.` We improve its robustness
 For example, we use `grep` to check Redis replies:
 ```shell
 redis1() {
-  $rediscli | grep -q '^1$'
+  $rediscli $* | grep -q '^1$'
 }
 ```
 where the script will automatically exit if the reply is not matched, because of the exit-on-error setting.
